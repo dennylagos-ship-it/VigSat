@@ -39,6 +39,7 @@ function Login() {
   return (
     <div className="center">
       <form className="card login" onSubmit={submit}>
+        <img src="/icon.png" alt="" className="logo" />
         <h1 className="brand">VigSat</h1>
         <p className="muted">Entra con el mismo usuario de la app del celular.</p>
         <label>Correo<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>

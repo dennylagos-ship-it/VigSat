@@ -42,7 +42,8 @@ button, input { font: inherit; }
 .login { width: min(380px, 100%); display: grid; gap: 14px; }
 .login label { display: grid; gap: 6px; font-weight: 600; font-size: 14px; }
 input { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); }
-.brand { margin: 0; color: var(--primary); font-weight: 800; font-size: 28px; }
+.logo { width: 72px; height: 72px; border-radius: 18px; justify-self: center; }
+.brand { margin: 0; text-align: center; color: var(--primary); font-weight: 800; font-size: 28px; }
 .brand.small { font-size: 20px; }
 
 button { cursor: pointer; }
