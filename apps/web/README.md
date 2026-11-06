@@ -6,7 +6,7 @@ Panel para ver los vehículos en un mapa en tiempo real y su recorrido por día.
 - Lista de vehículos con estado: **En línea** (menos de 2 min), **Reciente** (menos de 30 min) o **Sin señal**.
 - Mapa OpenStreetMap con la última posición de cada vehículo; se actualiza solo.
 - Al elegir un vehículo se dibuja su recorrido de hoy y se alarga en vivo; se puede elegir otro día.
-- Tema claro, oscuro o automático (botón arriba a la izquierda), con mapa oscuro de CARTO.
+- Tema claro, oscuro o automático (botón arriba a la izquierda), con el mapa de OpenStreetMap oscurecido (sin claves).
 
 ## Abrirlo en tu computadora
 
