@@ -1,0 +1,111 @@
+rules_version = '2';
+
+// VigSat — reglas de seguridad de Firestore
+//
+// Modelo:
+//   accounts/{accountId}                      cuenta: flota o particular
+//   accounts/{accountId}/members/{uid}        miembros con rol owner | admin | viewer | driver
+//   devices/{deviceId}                        celular o rastreador GPS, con su última posición en `last`
+//   devices/{deviceId}/positions/{posId}      cada punto GPS (inmutable)
+//
+// Cada usuario ve solo las cuentas donde es miembro, y un celular solo puede
+// enviar posiciones del dispositivo que tiene asignado.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function memberDoc(accountId) {
+      return /databases/$(database)/documents/accounts/$(accountId)/members/$(request.auth.uid);
+    }
+
+    function isMember(accountId) {
+      return signedIn() && exists(memberDoc(accountId));
+    }
+
+    function isAdmin(accountId) {
+      return isMember(accountId) && get(memberDoc(accountId)).data.role in ['owner', 'admin'];
+    }
+
+    function validLocation(d) {
+      return d.lat is number && d.lat >= -90 && d.lat <= 90
+          && d.lng is number && d.lng >= -180 && d.lng <= 180
+          && d.recordedAt is timestamp;
+    }
+
+    // ---------------- Cuentas ----------------
+    match /accounts/{accountId} {
+      allow read: if isMember(accountId);
+
+      // Cualquiera con sesión crea su cuenta y queda como dueño (ownerId = su uid).
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['name', 'kind', 'ownerId', 'createdAt'])
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.kind in ['fleet', 'personal']
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 120;
+
+      allow update: if isAdmin(accountId)
+        && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if false;
+
+      match /members/{uid} {
+        allow read: if isMember(accountId);
+
+        // El dueño se agrega a sí mismo como 'owner' al crear la cuenta (en el mismo batch).
+        allow create: if signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.role == 'owner'
+          && getAfter(/databases/$(database)/documents/accounts/$(accountId)).data.ownerId == request.auth.uid;
+
+        // Los admins agregan, cambian o quitan miembros (no pueden crear otros dueños).
+        allow create, update: if isAdmin(accountId)
+          && request.resource.data.role in ['admin', 'viewer', 'driver'];
+        allow delete: if isAdmin(accountId) && uid != request.auth.uid;
+      }
+    }
+
+    // ---------------- Dispositivos ----------------
+    match /devices/{deviceId} {
+      allow read: if isMember(resource.data.accountId);
+
+      allow create: if isAdmin(request.resource.data.accountId)
+        && request.resource.data.kind in ['phone', 'gps_tracker']
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80;
+
+      // Admins editan todo menos la cuenta a la que pertenece.
+      allow update: if isAdmin(resource.data.accountId)
+        && request.resource.data.accountId == resource.data.accountId;
+
+      // El celular asignado solo puede actualizar su última posición.
+      allow update: if signedIn()
+        && resource.data.kind == 'phone'
+        && resource.data.assignedUserId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['last'])
+        && validLocation(request.resource.data.last);
+
+      allow delete: if isAdmin(resource.data.accountId);
+
+      // ---------------- Posiciones ----------------
+      match /positions/{posId} {
+        function device() {
+          return get(/databases/$(database)/documents/devices/$(deviceId)).data;
+        }
+
+        allow read: if isMember(device().accountId);
+
+        allow create: if signedIn()
+          && device().kind == 'phone'
+          && device().assignedUserId == request.auth.uid
+          && validLocation(request.resource.data);
+
+        // Las posiciones no se editan ni se borran desde la app.
+        allow update, delete: if false;
+      }
+    }
+  }
+}

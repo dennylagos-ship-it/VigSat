@@ -1,6 +1,6 @@
 # Plan del MVP
 
-1. **Repositorio y base de datos** — estructura del proyecto y esquema en Supabase.
+1. **Repositorio y base de datos** — estructura del proyecto, modelo de datos y reglas en Firebase.
 2. **App rastreadora** — celular Android/iPhone que envía su ubicación, también en segundo plano.
 3. **Panel web** — mapa en tiempo real, historial de recorridos y lista de vehículos.
 4. **Prueba real** — 2 o 3 celulares en carros; luego elegir GPS físico y servidor.
