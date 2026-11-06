@@ -41,14 +41,7 @@ function Login() {
   return (
     <div className="auth">
       <section className="auth-brand">
-        <svg className="auth-orbits" viewBox="0 0 600 600" aria-hidden>
-          <circle cx="300" cy="300" r="180" />
-          <circle cx="300" cy="300" r="250" />
-          <ellipse cx="300" cy="300" rx="290" ry="120" transform="rotate(-25 300 300)" />
-          <circle className="sat" cx="530" cy="170" r="5" />
-          <circle className="sat" cx="120" cy="420" r="4" />
-          <circle className="sat" cx="410" cy="520" r="3" />
-        </svg>
+        <BrandBackdrop />
         <div className="auth-brand-inner">
           <div className="auth-logo">
             <img src="/icon.png" alt="" />
@@ -104,6 +97,51 @@ function Login() {
 }
 
 const YEAR = new Date().getFullYear();
+
+const ORBITS = [
+  { d: 'M120 300a180 180 0 1 0 360 0a180 180 0 1 0 -360 0', dur: '38s', r: 5 },
+  { d: 'M550 300a250 250 0 1 0 -500 0a250 250 0 1 0 500 0', dur: '64s', r: 4 },
+  { d: 'M10 300a290 120 0 1 0 580 0a290 120 0 1 0 -580 0', dur: '46s', r: 3.5, tilt: -25 },
+];
+
+// Puntas de la rosa de los vientos: [ángulo, largo, ancho]
+const ROSE_POINTS = [0, 90, 180, 270].map((a) => [a, 118, 16]).concat([45, 135, 225, 315].map((a) => [a, 70, 11]));
+
+function rosePoint([angle, len, w]: number[]) {
+  // Cada punta en dos mitades (clara y oscura) para dar volumen.
+  return (
+    <g key={angle} transform={`rotate(${angle} 300 300)`}>
+      <path className="rose-light" d={`M300 ${300 - len} L${300 - w} 300 L300 300Z`} />
+      <path className="rose-dark" d={`M300 ${300 - len} L${300 + w} 300 L300 300Z`} />
+    </g>
+  );
+}
+
+/** Fondo animado del login: órbitas con satélites y una rosa de los vientos. */
+function BrandBackdrop() {
+  return (
+    <svg className="auth-orbits" viewBox="0 0 600 600" aria-hidden>
+      {ORBITS.map((o, i) => (
+        <g key={i} transform={o.tilt ? `rotate(${o.tilt} 300 300)` : undefined}>
+          <path id={`orbit-${i}`} className="orbit" d={o.d} />
+          <circle className="sat" r={o.r}>
+            <animateMotion dur={o.dur} repeatCount="indefinite"><mpath href={`#orbit-${i}`} /></animateMotion>
+          </circle>
+        </g>
+      ))}
+      <g className="rose">
+        <circle className="rose-ticks" cx="300" cy="300" r="140" />
+        <circle className="rose-ring" cx="300" cy="300" r="128" />
+        <g className="rose-star">
+          {ROSE_POINTS.map(rosePoint)}
+          <circle className="rose-hub" cx="300" cy="300" r="6" />
+          <text x="300" y="165" textAnchor="middle">N</text>
+        </g>
+      </g>
+      <circle className="radar" cx="300" cy="300" r="40" />
+    </svg>
+  );
+}
 
 /** '584247714625' -> '+58 424 771 4625' */
 function formatPhone(digits: string) {
