@@ -6,3 +6,6 @@ node_modules/
 dist/
 .DS_Store
 supabase/.temp/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
