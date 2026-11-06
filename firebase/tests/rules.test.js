@@ -8,7 +8,7 @@ import {
 } from '@firebase/rules-unit-testing';
 import {
   doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, writeBatch, serverTimestamp, Timestamp,
-  query, where,
+  query, where, orderBy, arrayUnion,
 } from 'firebase/firestore';
 
 let env;
@@ -103,6 +103,7 @@ test('primer uso: crear cuenta y luego registrar el celular propio', async () =>
   const b = writeBatch(d);
   b.set(doc(d, 'accounts', 'acc9'), { name: 'Yo', kind: 'personal', ownerId: 'nuevo', createdAt: serverTimestamp() });
   b.set(doc(d, 'accounts', 'acc9', 'members', 'nuevo'), { role: 'owner' });
+  b.set(doc(d, 'users', 'nuevo'), { accountIds: arrayUnion('acc9') }, { merge: true });
   await assertSucceeds(b.commit());
   await assertSucceeds(addDoc(collection(d, 'devices'), {
     accountId: 'acc9', name: 'Mi carro', plate: null, kind: 'phone', assignedUserId: 'nuevo', createdAt: serverTimestamp(),
@@ -116,4 +117,33 @@ test('el celular envía varias posiciones y su última posición en un batch', a
   b.set(doc(collection(d, 'devices', DEV, 'positions')), pos());
   b.update(doc(d, 'devices', DEV), { last: pos() });
   await assertSucceeds(b.commit());
+});
+
+test('cada usuario lee y escribe solo su propio documento users', async () => {
+  await assertSucceeds(setDoc(doc(db('owner'), 'users', 'owner'), { accountIds: [ACC] }));
+  await assertSucceeds(getDoc(doc(db('owner'), 'users', 'owner')));
+  await assertFails(getDoc(doc(db('intruso'), 'users', 'owner')));
+  await assertFails(setDoc(doc(db('intruso'), 'users', 'owner'), { accountIds: [] }));
+  await assertFails(setDoc(doc(db('owner'), 'users', 'owner'), { accountIds: [ACC], admin: true }));
+});
+
+test('anotar una cuenta ajena en users no da acceso a ella', async () => {
+  await setDoc(doc(db('intruso'), 'users', 'intruso'), { accountIds: [ACC] });
+  await assertFails(getDoc(doc(db('intruso'), 'accounts', ACC)));
+  await assertFails(getDocs(query(collection(db('intruso'), 'devices'), where('accountId', '==', ACC))));
+});
+
+test('el panel lista los vehículos de la cuenta y su recorrido del día', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await addDoc(collection(ctx.firestore(), 'devices', DEV, 'positions'), pos());
+  });
+  const d = db('owner');
+  const devs = await assertSucceeds(getDocs(query(collection(d, 'devices'), where('accountId', '==', ACC))));
+  if (devs.size !== 1) throw new Error('esperaba 1 dispositivo');
+  const start = Timestamp.fromMillis(Date.now() - 86_400_000);
+  const route = await assertSucceeds(getDocs(query(
+    collection(d, 'devices', DEV, 'positions'), where('recordedAt', '>=', start), orderBy('recordedAt'),
+  )));
+  if (route.size !== 1) throw new Error('esperaba 1 posición');
+  await assertFails(getDocs(query(collection(db('intruso'), 'devices', DEV, 'positions'), orderBy('recordedAt'))));
 });
