@@ -33,3 +33,14 @@ VITE_USE_EMULATOR=1 npm run dev
 npm run build   # typecheck + build
 npm run lint
 ```
+
+## Publicar en internet (Firebase Hosting, gratis)
+
+Desde la raíz del repo:
+
+```
+npx firebase-tools login
+npx firebase-tools deploy --only hosting
+```
+
+Compila el panel y lo publica en https://vigsat.web.app. Repite el segundo comando cada vez que cambie el panel.
