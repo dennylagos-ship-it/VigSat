@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet';
 
 import { routeDistanceKm, useRoute, useAccounts, useDevices, type Device, type RoutePoint } from './data';
+import { CONTACT } from './contact';
 import { auth } from './firebase';
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -37,17 +39,121 @@ function Login() {
   }
 
   return (
-    <div className="center">
-      <form className="card login" onSubmit={submit}>
-        <img src="/icon.png" alt="" className="logo" />
-        <h1 className="brand">VigSat</h1>
-        <p className="muted">Entra con el mismo usuario de la app del celular.</p>
-        <label>Correo<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
-        <label>Contraseña<input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
-        {error && <p className="error">{error}</p>}
-        <button className="primary" disabled={busy}>{busy ? 'Entrando…' : 'Entrar'}</button>
-      </form>
+    <div className="auth">
+      <section className="auth-brand">
+        <svg className="auth-orbits" viewBox="0 0 600 600" aria-hidden>
+          <circle cx="300" cy="300" r="180" />
+          <circle cx="300" cy="300" r="250" />
+          <ellipse cx="300" cy="300" rx="290" ry="120" transform="rotate(-25 300 300)" />
+          <circle className="sat" cx="530" cy="170" r="5" />
+          <circle className="sat" cx="120" cy="420" r="4" />
+          <circle className="sat" cx="410" cy="520" r="3" />
+        </svg>
+        <div className="auth-brand-inner">
+          <div className="auth-logo">
+            <img src="/icon.png" alt="" />
+            <span>VigSat</span>
+          </div>
+          <h1>Sabe dónde están tus vehículos, en todo momento.</h1>
+          <p className="auth-lead">Rastreo GPS en tiempo real para flotas de empresas y vehículos particulares.</p>
+          <ul className="auth-features">
+            <li><Icon name="pin" /><span><b>Ubicación en vivo</b>Mira cada vehículo moverse en el mapa al instante.</span></li>
+            <li><Icon name="route" /><span><b>Historial de recorridos</b>Consulta por día la ruta, los kilómetros y la velocidad.</span></li>
+            <li><Icon name="fleet" /><span><b>Flotas y particulares</b>Desde un carro hasta toda tu empresa, en un solo panel.</span></li>
+          </ul>
+          <ContactBlock />
+        </div>
+      </section>
+
+      <section className="auth-form-wrap">
+        <form className="auth-form" onSubmit={submit}>
+          <div className="auth-form-logo"><img src="/icon.png" alt="" /><span>VigSat</span></div>
+          <h2>Bienvenido</h2>
+          <p className="muted">Entra con el mismo usuario de la app del celular.</p>
+          <label className="field">
+            <span>Correo</span>
+            <span className="input-wrap">
+              <Icon name="mail" />
+              <input type="email" autoComplete="email" placeholder="tu@correo.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </span>
+          </label>
+          <label className="field">
+            <span>Contraseña</span>
+            <span className="input-wrap">
+              <Icon name="lock" />
+              <input type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <button type="button" className="reveal" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                {showPassword ? 'Ocultar' : 'Ver'}
+              </button>
+            </span>
+          </label>
+          {error && <p className="error" role="alert">{error}</p>}
+          <button className="primary big" disabled={busy}>{busy ? 'Entrando…' : 'Entrar al panel'}</button>
+          <p className="muted small center-text">¿Aún no tienes usuario? Regístrate desde la app VigSat en tu celular.</p>
+        </form>
+        <footer className="auth-footer muted">
+          <span>© {YEAR} VigSat · Rastreo satelital</span>
+          <a className="auth-credit" href="https://wa.me/584247714625" target="_blank" rel="noreferrer">
+            <img src="/frontino.png" alt="" />
+            <span>Desarrollado por <b>Frontino</b> Software Solutions</span>
+          </a>
+        </footer>
+      </section>
     </div>
+  );
+}
+
+const YEAR = new Date().getFullYear();
+
+/** '584247714625' -> '+58 424 771 4625' */
+function formatPhone(digits: string) {
+  const m = digits.match(/^(58)(\d{3})(\d{3})(\d{4})$/);
+  return m ? `+${m[1]} ${m[2]} ${m[3]} ${m[4]}` : `+${digits}`;
+}
+
+function ContactBlock() {
+  const c = CONTACT;
+  const items = [
+    c.phone && { icon: 'phone' as const, label: c.phone, href: `tel:${c.phone.replace(/[^+\d]/g, '')}` },
+    c.whatsapp && { icon: 'chat' as const, label: `WhatsApp ${formatPhone(c.whatsapp)}`, href: `https://wa.me/${c.whatsapp}` },
+    c.email && { icon: 'mail' as const, label: c.email, href: `mailto:${c.email}` },
+    (c.address || c.city) && { icon: 'pin' as const, label: [c.address, c.city].filter(Boolean).join(', ') },
+    c.instagram && { icon: 'at' as const, label: `@${c.instagram}`, href: `https://instagram.com/${c.instagram}` },
+    c.facebook && { icon: 'at' as const, label: 'Facebook', href: c.facebook },
+  ].filter(Boolean) as { icon: IconName; label: string; href?: string }[];
+  if (items.length === 0) return null;
+  return (
+    <div className="auth-contact">
+      <h3>Contáctanos</h3>
+      <ul>
+        {items.map((it) => (
+          <li key={it.label}>
+            <Icon name={it.icon} />
+            {it.href ? <a href={it.href} target="_blank" rel="noreferrer">{it.label}</a> : <span>{it.label}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+type IconName = 'pin' | 'route' | 'fleet' | 'mail' | 'lock' | 'phone' | 'chat' | 'at';
+const ICON_PATHS: Record<IconName, string> = {
+  pin: 'M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Zm0-9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z',
+  route: 'M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm12-10a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM8 17h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7',
+  fleet: 'M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm10 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z',
+  mail: 'M4 6h16v12H4zM4 7l8 6 8-6',
+  lock: 'M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3',
+  phone: 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z',
+  chat: 'M4 20l1.5-4A8 8 0 1 1 9 19.5L4 20Z',
+  at: 'M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm0 0v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-4 7.5',
+};
+
+function Icon({ name }: { name: IconName }) {
+  return (
+    <svg className="icon" viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d={ICON_PATHS[name]} />
+    </svg>
   );
 }
 
