@@ -7,8 +7,8 @@ Sistema de rastreo GPS en tiempo real para flotas vehiculares y particulares.
 | Carpeta | Contenido |
 |---|---|
 | `firebase/` | Reglas de seguridad de Firestore y sus pruebas |
-| `apps/tracker/` | App móvil rastreadora (Expo / React Native) — paso 2 |
-| `apps/web/` | Panel web con mapa en tiempo real — paso 3 |
+| `apps/tracker/` | App móvil rastreadora (Expo / React Native) — ver su README |
+| `apps/web/` | Panel web con mapa en tiempo real — ver su README |
 | `docs/` | Plan y decisiones |
 
 ## Backend: Firebase
@@ -18,6 +18,7 @@ Usamos Firebase (Authentication + Cloud Firestore) en un proyecto propio, plan g
 ### Modelo de datos (Firestore)
 
 ```
+users/{uid}                           accountIds (cuentas del usuario, para el panel)
 accounts/{accountId}                  name, kind ('fleet' | 'personal'), ownerId, createdAt
 accounts/{accountId}/members/{uid}    role ('owner' | 'admin' | 'viewer' | 'driver')
 devices/{deviceId}                    accountId, name, plate, kind ('phone' | 'gps_tracker'),

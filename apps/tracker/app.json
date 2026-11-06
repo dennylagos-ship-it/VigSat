@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "VigSat",
+    "slug": "vigsat-tracker",
+    "scheme": "vigsat",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.vigsat.tracker",
+      "infoPlist": {
+        "UIBackgroundModes": ["location"]
+      }
+    },
+    "android": {
+      "package": "com.vigsat.tracker",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "VigSat usa tu ubicación para mostrar dónde está el vehículo.",
+          "locationAlwaysAndWhenInUsePermission": "VigSat usa tu ubicación, incluso con la app cerrada, para rastrear el vehículo en tiempo real.",
+          "locationAlwaysPermission": "VigSat usa tu ubicación, incluso con la app cerrada, para rastrear el vehículo en tiempo real.",
+          "motionUsagePermission": false,
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
+    ]
+  }
+}
