@@ -85,21 +85,43 @@ export function useDevices(accountIds: string[]) {
   return Object.values(byAccount).flat().sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Recorrido de un dispositivo en un día (hora local). */
-export async function loadRoute(deviceId: string, day: Date): Promise<RoutePoint[]> {
-  const start = new Date(day.getFullYear(), day.getMonth(), day.getDate());
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
-  const snap = await getDocs(query(
-    collection(db, 'devices', deviceId, 'positions'),
-    where('recordedAt', '>=', Timestamp.fromDate(start)),
-    where('recordedAt', '<', Timestamp.fromDate(end)),
-    orderBy('recordedAt'),
-  ));
-  return snap.docs.map((d) => {
-    const p = d.data();
-    return { lat: p.lat, lng: p.lng, speedKmh: p.speedKmh, at: (p.recordedAt as Timestamp).toDate() };
+/**
+ * Recorrido de un dispositivo en un día (hora local, formato AAAA-MM-DD), en tiempo real:
+ * si el día es hoy, la línea se alarga sola con cada nueva posición.
+ */
+export function useRoute(deviceId: string | null, day: string) {
+  const [state, setState] = useState<{ key: string; points: RoutePoint[] | null; error: string | null }>({
+    key: '', points: null, error: null,
   });
+  const key = deviceId ? `${deviceId}|${day}` : '';
+
+  useEffect(() => {
+    if (!deviceId) return;
+    const [y, m, d] = day.split('-').map(Number);
+    const start = new Date(y, m - 1, d);
+    const end = new Date(y, m - 1, d + 1);
+    return onSnapshot(
+      query(
+        collection(db, 'devices', deviceId, 'positions'),
+        where('recordedAt', '>=', Timestamp.fromDate(start)),
+        where('recordedAt', '<', Timestamp.fromDate(end)),
+        orderBy('recordedAt'),
+      ),
+      (snap) => setState({
+        key: `${deviceId}|${day}`,
+        error: null,
+        points: snap.docs.map((doc) => {
+          const p = doc.data();
+          return { lat: p.lat, lng: p.lng, speedKmh: p.speedKmh, at: (p.recordedAt as Timestamp).toDate() };
+        }),
+      }),
+      (e) => setState({ key: `${deviceId}|${day}`, points: null, error: e.message }),
+    );
+  }, [deviceId, day]);
+
+  // Mientras llega la primera respuesta del nuevo vehículo o día, no se muestra el recorrido anterior.
+  const current = state.key === key;
+  return { key, route: current ? state.points : null, error: current ? state.error : null, loading: !!key && !current };
 }
 
 /** Distancia total del recorrido en km (fórmula de haversine). */

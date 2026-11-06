@@ -3,7 +3,7 @@ import L from 'leaflet';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet';
 
-import { loadRoute, routeDistanceKm, useAccounts, useDevices, type Device, type RoutePoint } from './data';
+import { routeDistanceKm, useRoute, useAccounts, useDevices, type Device, type RoutePoint } from './data';
 import { auth } from './firebase';
 
 export default function App() {
@@ -51,6 +51,43 @@ function Login() {
   );
 }
 
+// ---------------------------------------------------------------- Tema claro / oscuro
+
+type ThemeMode = 'auto' | 'light' | 'dark';
+const THEME_KEY = 'vigsat.theme';
+const THEME_LABEL: Record<ThemeMode, string> = { auto: '◐ Auto', light: '☀ Claro', dark: '☾ Oscuro' };
+
+function readThemeMode(): ThemeMode {
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    return v === 'light' || v === 'dark' ? v : 'auto';
+  } catch {
+    return 'auto';
+  }
+}
+
+function useTheme() {
+  const [mode, setMode] = useState<ThemeMode>(readThemeMode);
+  const media = useMemo(() => window.matchMedia('(prefers-color-scheme: dark)'), []);
+  const [systemDark, setSystemDark] = useState(media.matches);
+
+  useEffect(() => {
+    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, [media]);
+
+  useEffect(() => {
+    if (mode === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = mode;
+    try { localStorage.setItem(THEME_KEY, mode); } catch { /* sin almacenamiento: solo esta sesión */ }
+  }, [mode]);
+
+  const resolved: 'light' | 'dark' = mode === 'auto' ? (systemDark ? 'dark' : 'light') : mode;
+  const cycle = () => setMode((m) => (m === 'auto' ? 'dark' : m === 'dark' ? 'light' : 'auto'));
+  return { mode, resolved, cycle };
+}
+
 // ---------------------------------------------------------------- Panel
 
 type Status = 'online' | 'recent' | 'offline';
@@ -94,34 +131,22 @@ function Dashboard({ user }: { user: User }) {
   const accountIds = useMemo(() => (accounts ?? []).map((a) => a.id), [accounts]);
   const devices = useDevices(accountIds);
   const now = useNow();
+  const { mode: themeMode, resolved: theme, cycle: cycleTheme } = useTheme();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [day, setDay] = useState(todayInput);
-  const [route, setRoute] = useState<RoutePoint[] | null>(null);
-  const [routeBusy, setRouteBusy] = useState(false);
-  const [routeError, setRouteError] = useState<string | null>(null);
+  const [showRoute, setShowRoute] = useState(true);
+  const { key: routeKey, route: routePoints, error: routeError, loading: routeLoading } = useRoute(selectedId, day);
+  const route = showRoute ? routePoints : null;
+  const live = day === todayInput();
 
   const selected = devices.find((d) => d.id === selectedId) ?? null;
   const accountName = (id: string) => accounts?.find((a) => a.id === id)?.name ?? '';
 
   function select(id: string | null) {
     setSelectedId(id);
-    setRoute(null);
-    setRouteError(null);
-  }
-
-  async function showRoute() {
-    if (!selected) return;
-    setRouteBusy(true);
-    setRouteError(null);
-    try {
-      const [y, m, d] = day.split('-').map(Number);
-      setRoute(await loadRoute(selected.id, new Date(y, m - 1, d)));
-    } catch (e) {
-      setRouteError(e instanceof Error ? e.message : 'No se pudo cargar el recorrido.');
-    } finally {
-      setRouteBusy(false);
-    }
+    setDay(todayInput());
+    setShowRoute(true);
   }
 
   return (
@@ -129,7 +154,10 @@ function Dashboard({ user }: { user: User }) {
       <aside className="sidebar">
         <header className="sidebar-head">
           <span className="brand small">VigSat</span>
-          <button className="link" onClick={() => signOut(auth)} title={user.email ?? ''}>Salir</button>
+          <span className="head-actions">
+            <button className="link" onClick={cycleTheme} title="Cambiar tema">{THEME_LABEL[themeMode]}</button>
+            <button className="link" onClick={() => signOut(auth)} title={user.email ?? ''}>Salir</button>
+          </span>
         </header>
 
         {error && <p className="error">No se pudieron cargar tus cuentas: {error}</p>}
@@ -165,12 +193,16 @@ function Dashboard({ user }: { user: User }) {
 
         {selected && (
           <section className="history">
-            <h2>Recorrido de {selected.name}</h2>
+            <h2>
+              Recorrido de {selected.name}
+              {live && <span className="live">● En vivo</span>}
+            </h2>
             <div className="row">
-              <input type="date" value={day} max={todayInput()} onChange={(e) => setDay(e.target.value)} />
-              <button className="primary" onClick={showRoute} disabled={routeBusy}>{routeBusy ? 'Cargando…' : 'Ver'}</button>
+              <input type="date" value={day} max={todayInput()} onChange={(e) => e.target.value && setDay(e.target.value)} />
+              <button className="secondary" onClick={() => setShowRoute((v) => !v)}>{showRoute ? 'Ocultar' : 'Mostrar'}</button>
             </div>
-            {routeError && <p className="error">{routeError}</p>}
+            {routeError && <p className="error">No se pudo cargar el recorrido: {routeError}</p>}
+            {showRoute && routeLoading && <p className="muted">Cargando recorrido…</p>}
             {route && (
               route.length === 0
                 ? <p className="muted">No hay recorrido ese día.</p>
@@ -183,19 +215,30 @@ function Dashboard({ user }: { user: User }) {
                   </p>
                 )
             )}
-            {route && <button className="link" onClick={() => setRoute(null)}>Ocultar recorrido</button>}
           </section>
         )}
       </aside>
 
       <main className="map">
-        <FleetMap devices={devices} selected={selected} route={route} now={now} onSelect={select} />
+        <FleetMap theme={theme} devices={devices} selected={selected} route={route} routeKey={routeKey} live={live} now={now} onSelect={select} />
       </main>
     </div>
   );
 }
 
 // ---------------------------------------------------------------- Mapa
+
+const TILES = {
+  light: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  },
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+  },
+} as const;
 
 const STATUS_COLOR: Record<Status, string> = { online: '#16a34a', recent: '#d97706', offline: '#64748b' };
 
@@ -208,16 +251,15 @@ function vehicleIcon(name: string, status: Status, selected: boolean) {
   });
 }
 
-function FleetMap({ devices, selected, route, now, onSelect }: {
-  devices: Device[]; selected: Device | null; route: RoutePoint[] | null; now: number; onSelect: (id: string) => void;
+function FleetMap({ theme, devices, selected, route, routeKey, live, now, onSelect }: {
+  theme: 'light' | 'dark'; devices: Device[]; selected: Device | null; route: RoutePoint[] | null;
+  routeKey: string; live: boolean; now: number; onSelect: (id: string) => void;
 }) {
+  const routeColor = theme === 'dark' ? '#2dd4bf' : '#0f766e';
   const located = devices.filter((d) => d.last);
   return (
     <MapContainer center={[10.5, -66.9]} zoom={5} className="leaflet" zoomControl>
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+      <TileLayer key={theme} {...TILES[theme]} />
       {located.map((d) => (
         <Marker
           key={d.id}
@@ -228,7 +270,7 @@ function FleetMap({ devices, selected, route, now, onSelect }: {
       ))}
       {route && route.length > 0 && (
         <>
-          <Polyline positions={route.map((p) => [p.lat, p.lng] as [number, number])} pathOptions={{ color: '#0f766e', weight: 4 }} />
+          <Polyline positions={route.map((p) => [p.lat, p.lng] as [number, number])} pathOptions={{ color: routeColor, weight: 4 }} />
           <CircleMarker center={[route[0].lat, route[0].lng]} radius={7} pathOptions={{ color: '#fff', fillColor: '#16a34a', fillOpacity: 1, weight: 2 }}>
             <Tooltip>Inicio {route[0].at.toLocaleTimeString()}</Tooltip>
           </CircleMarker>
@@ -237,31 +279,45 @@ function FleetMap({ devices, selected, route, now, onSelect }: {
           </CircleMarker>
         </>
       )}
-      <FitView devices={located} selected={selected} route={route} />
+      <FitView devices={located} selected={selected} route={route} routeKey={routeKey} live={live} />
     </MapContainer>
   );
 }
 
-/** Encuadra el mapa: el recorrido, el vehículo elegido o toda la flota. */
-function FitView({ devices, selected, route }: { devices: Device[]; selected: Device | null; route: RoutePoint[] | null }) {
+/**
+ * Encuadra el mapa: toda la flota al entrar; el recorrido al elegir un vehículo o día;
+ * y, en vivo, mueve el mapa solo si el vehículo se sale de la vista.
+ */
+function FitView({ devices, selected, route, routeKey, live }: {
+  devices: Device[]; selected: Device | null; route: RoutePoint[] | null; routeKey: string; live: boolean;
+}) {
   const map = useMap();
   const fittedFleet = useRef(false);
-
-  useEffect(() => {
-    if (route && route.length > 0) {
-      map.fitBounds(L.latLngBounds(route.map((p) => [p.lat, p.lng])), { padding: [40, 40], maxZoom: 17, animate: false });
-    }
-  }, [map, route]);
-
-  useEffect(() => {
-    if (selected?.last && !route) map.setView([selected.last.lat, selected.last.lng], Math.max(map.getZoom(), 15), { animate: false });
-  }, [map, selected?.id, selected?.last, route]);
+  const fittedRouteKey = useRef('');
+  const lastLat = selected?.last?.lat;
+  const lastLng = selected?.last?.lng;
 
   useEffect(() => {
     if (fittedFleet.current || devices.length === 0) return;
     map.fitBounds(L.latLngBounds(devices.map((d) => [d.last!.lat, d.last!.lng])), { padding: [60, 60], maxZoom: 15 });
     fittedFleet.current = true;
   }, [map, devices]);
+
+  useEffect(() => {
+    if (!routeKey || fittedRouteKey.current === routeKey) return;
+    if (route && route.length > 0) {
+      map.fitBounds(L.latLngBounds(route.map((p) => [p.lat, p.lng])), { padding: [40, 40], maxZoom: 17, animate: false });
+      fittedRouteKey.current = routeKey;
+    } else if (route && lastLat != null && lastLng != null) {
+      map.setView([lastLat, lastLng], Math.max(map.getZoom(), 15), { animate: false });
+      fittedRouteKey.current = routeKey;
+    }
+  }, [map, route, routeKey, lastLat, lastLng]);
+
+  useEffect(() => {
+    if (!live || lastLat == null || lastLng == null || fittedRouteKey.current !== routeKey) return;
+    if (!map.getBounds().pad(-0.1).contains([lastLat, lastLng])) map.panTo([lastLat, lastLng]);
+  }, [map, live, routeKey, lastLat, lastLng]);
 
   return null;
 }
