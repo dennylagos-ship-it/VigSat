@@ -219,7 +219,7 @@ function Dashboard({ user }: { user: User }) {
         )}
       </aside>
 
-      <main className="map">
+      <main className={theme === 'dark' ? 'map map-dark' : 'map'}>
         <FleetMap theme={theme} devices={devices} selected={selected} route={route} routeKey={routeKey} live={live} now={now} onSelect={select} />
       </main>
     </div>
@@ -228,16 +228,10 @@ function Dashboard({ user }: { user: User }) {
 
 // ---------------------------------------------------------------- Mapa
 
+// Mapa base gratuito y sin clave (OpenStreetMap). En modo oscuro se oscurece con un filtro CSS.
 const TILES = {
-  light: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  },
-  dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-  },
+  url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 } as const;
 
 const STATUS_COLOR: Record<Status, string> = { online: '#16a34a', recent: '#d97706', offline: '#64748b' };
@@ -259,7 +253,7 @@ function FleetMap({ theme, devices, selected, route, routeKey, live, now, onSele
   const located = devices.filter((d) => d.last);
   return (
     <MapContainer center={[10.5, -66.9]} zoom={5} className="leaflet" zoomControl>
-      <TileLayer key={theme} {...TILES[theme]} />
+      <TileLayer {...TILES} />
       {located.map((d) => (
         <Marker
           key={d.id}
