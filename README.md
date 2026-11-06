@@ -6,7 +6,7 @@ Sistema de rastreo GPS para flotas vehiculares y particulares.
 
 | Carpeta | Contenido |
 |---|---|
-| `supabase/migrations/` | Esquema de base de datos (Postgres + RLS en Supabase) |
+| `supabase/migrations/` | Esquema `vigsat` en Postgres + RLS (por ahora dentro del proyecto Supabase "rutago") |
 | `apps/tracker/` | App móvil rastreadora (Expo / React Native) — paso 2 |
 | `apps/web/` | Panel web con mapa en tiempo real — paso 3 |
 | `docs/` | Plan y decisiones |
