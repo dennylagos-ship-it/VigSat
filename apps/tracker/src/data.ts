@@ -1,5 +1,5 @@
 import {
-  addDoc, collection, doc, getDocs, limit, query, serverTimestamp, where, writeBatch,
+  addDoc, arrayUnion, collection, doc, getDocs, limit, query, serverTimestamp, where, writeBatch,
 } from 'firebase/firestore';
 
 import { db } from './firebase';
@@ -44,6 +44,8 @@ export async function createAccountWithDevice(params: {
     createdAt: serverTimestamp(),
   });
   batch.set(doc(db, 'accounts', accountRef.id, 'members', params.uid), { role: 'owner' });
+  // Lista de cuentas del usuario, que el panel web usa para encontrarlas.
+  batch.set(doc(db, 'users', params.uid), { accountIds: arrayUnion(accountRef.id) }, { merge: true });
   await batch.commit();
 
   // Se crea después del batch: la regla verifica que el usuario ya sea dueño de la cuenta.

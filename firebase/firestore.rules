@@ -36,6 +36,18 @@ service cloud.firestore {
           && d.recordedAt is timestamp;
     }
 
+    // ---------------- Usuarios ----------------
+    // users/{uid}.accountIds: cuentas del usuario, para que el panel las encuentre.
+    // Agregar un id aquí no da acceso: cada cuenta sigue exigiendo ser miembro.
+    match /users/{uid} {
+      allow read: if signedIn() && uid == request.auth.uid;
+      allow create, update: if signedIn() && uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['accountIds'])
+        && request.resource.data.accountIds is list
+        && request.resource.data.accountIds.size() <= 50;
+      allow delete: if false;
+    }
+
     // ---------------- Cuentas ----------------
     match /accounts/{accountId} {
       allow read: if isMember(accountId);
