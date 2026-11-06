@@ -119,8 +119,23 @@ button { cursor: pointer; }
 .auth { min-height: 100%; display: grid; grid-template-columns: 1.1fr 1fr; }
 .auth-brand { position: relative; overflow: hidden; color: #e6f1ff; background: radial-gradient(120% 90% at 20% 0%, #0d4a86 0%, #072a55 45%, #02082a 100%); display: flex; align-items: center; padding: 48px clamp(24px, 5vw, 72px); }
 .auth-orbits { position: absolute; right: -160px; top: 50%; width: 760px; transform: translateY(-50%); opacity: .35; pointer-events: none; }
-.auth-orbits circle, .auth-orbits ellipse { fill: none; stroke: #38bdf8; stroke-width: 1; }
-.auth-orbits .sat { fill: #5eead4; stroke: none; filter: drop-shadow(0 0 6px #5eead4); }
+.auth-orbits .orbit { fill: none; stroke: #38bdf8; stroke-width: 1; }
+.auth-orbits .sat { fill: #5eead4; filter: drop-shadow(0 0 6px #5eead4); }
+.auth-orbits .rose, .auth-orbits .rose-star, .auth-orbits .rose-ticks, .auth-orbits .radar { transform-origin: 300px 300px; }
+.auth-orbits .rose-ticks { fill: none; stroke: #7dd3fc; stroke-width: 10; stroke-dasharray: 1.2 11.02; animation: vs-spin 90s linear infinite; }
+.auth-orbits .rose-ring { fill: none; stroke: #38bdf8; stroke-width: 1.5; }
+.auth-orbits .rose-light { fill: #7dd3fc; }
+.auth-orbits .rose-dark { fill: #0ea5e9; opacity: .55; }
+.auth-orbits .rose-hub { fill: #5eead4; }
+.auth-orbits text { fill: #e6f1ff; font: 700 18px system-ui, sans-serif; }
+.auth-orbits .rose-star { animation: vs-sway 9s ease-in-out infinite; }
+.auth-orbits .radar { fill: none; stroke: #5eead4; stroke-width: 2; animation: vs-ping 4s ease-out infinite; }
+@keyframes vs-spin { to { transform: rotate(360deg); } }
+@keyframes vs-sway { 0%, 100% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } }
+@keyframes vs-ping { from { transform: scale(.6); opacity: .9; } to { transform: scale(7); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .auth-orbits * { animation: none !important; }
+}
 .auth-brand-inner { position: relative; max-width: 520px; display: grid; gap: 22px; }
 .auth-logo { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 26px; letter-spacing: -.01em; }
 .auth-logo img { width: 52px; height: 52px; border-radius: 14px; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
