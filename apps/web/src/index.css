@@ -153,7 +153,11 @@ button { cursor: pointer; }
 .primary.big { padding: 14px 16px; font-size: 16px; border-radius: 12px; margin-top: 4px; box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 30%, transparent); }
 .small { font-size: 13px; }
 .center-text { text-align: center; margin: 0; }
-.auth-footer { font-size: 12px; }
+.auth-footer { font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.auth-credit { display: flex; align-items: center; gap: 8px; color: var(--muted); text-decoration: none; padding: 6px 12px 6px 6px; border: 1px solid var(--border); border-radius: 999px; transition: border-color .15s, color .15s; }
+.auth-credit:hover { border-color: #22c55e; color: var(--text); }
+.auth-credit img { width: 26px; height: 25px; }
+.auth-credit b { color: var(--text); }
 
 @media (max-width: 900px) {
   .auth { grid-template-columns: 1fr; }

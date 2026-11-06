@@ -91,7 +91,13 @@ function Login() {
           <button className="primary big" disabled={busy}>{busy ? 'Entrando…' : 'Entrar al panel'}</button>
           <p className="muted small center-text">¿Aún no tienes usuario? Regístrate desde la app VigSat en tu celular.</p>
         </form>
-        <footer className="auth-footer muted">© {YEAR} VigSat · Rastreo satelital</footer>
+        <footer className="auth-footer muted">
+          <span>© {YEAR} VigSat · Rastreo satelital</span>
+          <a className="auth-credit" href="https://wa.me/584247714625" target="_blank" rel="noreferrer">
+            <img src="/frontino.png" alt="" />
+            <span>Desarrollado por <b>Frontino</b> Software Solutions</span>
+          </a>
+        </footer>
       </section>
     </div>
   );
@@ -99,11 +105,17 @@ function Login() {
 
 const YEAR = new Date().getFullYear();
 
+/** '584247714625' -> '+58 424 771 4625' */
+function formatPhone(digits: string) {
+  const m = digits.match(/^(58)(\d{3})(\d{3})(\d{4})$/);
+  return m ? `+${m[1]} ${m[2]} ${m[3]} ${m[4]}` : `+${digits}`;
+}
+
 function ContactBlock() {
   const c = CONTACT;
   const items = [
     c.phone && { icon: 'phone' as const, label: c.phone, href: `tel:${c.phone.replace(/[^+\d]/g, '')}` },
-    c.whatsapp && { icon: 'chat' as const, label: 'WhatsApp', href: `https://wa.me/${c.whatsapp}` },
+    c.whatsapp && { icon: 'chat' as const, label: `WhatsApp ${formatPhone(c.whatsapp)}`, href: `https://wa.me/${c.whatsapp}` },
     c.email && { icon: 'mail' as const, label: c.email, href: `mailto:${c.email}` },
     (c.address || c.city) && { icon: 'pin' as const, label: [c.address, c.city].filter(Boolean).join(', ') },
     c.instagram && { icon: 'at' as const, label: `@${c.instagram}`, href: `https://instagram.com/${c.instagram}` },

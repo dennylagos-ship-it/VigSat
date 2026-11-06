@@ -2,8 +2,8 @@
 // Los campos vacíos no se muestran.
 export const CONTACT = {
   phone: '',      // Ej.: '+57 300 000 0000'
-  whatsapp: '',   // Solo números con código de país, ej.: '573000000000'
-  email: '',
+  whatsapp: '584247714625', // Solo números con código de país
+  email: 'dennylagos@gmail.com',
   address: '',
   city: '',
   instagram: '',  // Usuario sin @
