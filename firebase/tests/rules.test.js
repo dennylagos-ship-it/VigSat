@@ -7,7 +7,8 @@ import {
   assertSucceeds,
 } from '@firebase/rules-unit-testing';
 import {
-  doc, getDoc, setDoc, updateDoc, addDoc, collection, writeBatch, serverTimestamp, Timestamp,
+  doc, getDoc, getDocs, setDoc, updateDoc, addDoc, collection, writeBatch, serverTimestamp, Timestamp,
+  query, where,
 } from 'firebase/firestore';
 
 let env;
@@ -89,4 +90,30 @@ test('las posiciones no se pueden editar', async () => {
     id = (await addDoc(collection(ctx.firestore(), 'devices', DEV, 'positions'), pos())).id;
   });
   await assertFails(updateDoc(doc(db('driver'), 'devices', DEV, 'positions', id), { lat: 1 }));
+});
+
+test('la app encuentra su dispositivo asignado; no los de otros', async () => {
+  const q = (uid) => query(collection(db(uid), 'devices'), where('assignedUserId', '==', uid));
+  await assertSucceeds(getDocs(q('driver')));
+  await assertFails(getDocs(query(collection(db('intruso'), 'devices'), where('assignedUserId', '==', 'driver'))));
+});
+
+test('primer uso: crear cuenta y luego registrar el celular propio', async () => {
+  const d = db('nuevo');
+  const b = writeBatch(d);
+  b.set(doc(d, 'accounts', 'acc9'), { name: 'Yo', kind: 'personal', ownerId: 'nuevo', createdAt: serverTimestamp() });
+  b.set(doc(d, 'accounts', 'acc9', 'members', 'nuevo'), { role: 'owner' });
+  await assertSucceeds(b.commit());
+  await assertSucceeds(addDoc(collection(d, 'devices'), {
+    accountId: 'acc9', name: 'Mi carro', plate: null, kind: 'phone', assignedUserId: 'nuevo', createdAt: serverTimestamp(),
+  }));
+});
+
+test('el celular envía varias posiciones y su última posición en un batch', async () => {
+  const d = db('driver');
+  const b = writeBatch(d);
+  b.set(doc(collection(d, 'devices', DEV, 'positions')), pos());
+  b.set(doc(collection(d, 'devices', DEV, 'positions')), pos());
+  b.update(doc(d, 'devices', DEV), { last: pos() });
+  await assertSucceeds(b.commit());
 });

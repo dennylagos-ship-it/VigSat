@@ -7,7 +7,7 @@ Sistema de rastreo GPS en tiempo real para flotas vehiculares y particulares.
 | Carpeta | Contenido |
 |---|---|
 | `firebase/` | Reglas de seguridad de Firestore y sus pruebas |
-| `apps/tracker/` | App móvil rastreadora (Expo / React Native) — paso 2 |
+| `apps/tracker/` | App móvil rastreadora (Expo / React Native) — ver su README |
 | `apps/web/` | Panel web con mapa en tiempo real — paso 3 |
 | `docs/` | Plan y decisiones |
 

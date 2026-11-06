@@ -70,7 +70,10 @@ service cloud.firestore {
 
     // ---------------- Dispositivos ----------------
     match /devices/{deviceId} {
-      allow read: if isMember(resource.data.accountId);
+      // Miembros de la cuenta, y el usuario cuyo celular está asignado al dispositivo
+      // (la app rastreadora busca "mi dispositivo" con where assignedUserId == uid).
+      allow read: if isMember(resource.data.accountId)
+        || (signedIn() && resource.data.assignedUserId == request.auth.uid);
 
       allow create: if isAdmin(request.resource.data.accountId)
         && request.resource.data.kind in ['phone', 'gps_tracker']
