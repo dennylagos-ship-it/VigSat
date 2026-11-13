@@ -1,6 +1,28 @@
-# VigSat
+<p align="center">
+  <img src=".github/frontino-oso.png" alt="Frontino Software Solutions" height="96">
+</p>
 
-Sistema de rastreo GPS en tiempo real para flotas vehiculares y particulares.
+<h1 align="center">VigSat</h1>
+<p align="center"><b>Rastreo GPS en tiempo real</b><br>Para flotas vehiculares y particulares: app rastreadora + panel web con mapa</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/App-Expo-1B2A41?logo=expo&logoColor=white" alt="App: Expo">
+  <img src="https://img.shields.io/badge/Panel-React%20%2B%20Vite-1B2A41?logo=react&logoColor=white" alt="Panel: React + Vite">
+  <img src="https://img.shields.io/badge/Backend-Firebase-FFCA28?logo=firebase&logoColor=white" alt="Backend: Firebase">
+  <img src="https://img.shields.io/badge/licencia-propietaria-25D366" alt="licencia: propietaria">
+</p>
+
+---
+
+## Funciones principales
+
+- 📍 **Ubicación en vivo** de cada vehículo o persona sobre el mapa.
+- 📱 **El celular como rastreador**, también en segundo plano.
+- 🗂️ **Cuentas de flota o personales**, con roles: dueño, administrador, observador y conductor.
+- 🕓 **Historial de posiciones** con velocidad, rumbo, precisión y batería.
+- 🔒 **Seguridad por reglas**: cada quien ve solo sus cuentas; un celular solo envía datos del equipo asignado.
+- 🛰️ Preparado para **rastreadores GPS físicos** (por IMEI) en una siguiente etapa.
+
 
 ## Estructura
 
@@ -51,3 +73,17 @@ npx firebase login
 npx firebase use <id-del-proyecto>
 npx firebase deploy --only firestore
 ```
+
+---
+
+## Licencia
+
+**Software propietario.** © 2026 Lcdo. Denny Lagos · Frontino Software Solutions. Todos los derechos reservados.
+
+<p align="center">
+  <img src=".github/frontino-oso.png" alt="Frontino Software Solutions" height="56"><br>
+  <b>Frontino Software Solutions</b> · Táchira, Venezuela<br>
+  <i>«El poder de las grandes ideas hecho software»</i><br>
+  Apps Android · páginas web · aulas virtuales · sistemas a la medida · chatbots con IA<br>
+  📱 WhatsApp: <a href="https://wa.me/584247714625">+58 424 771 4625</a> · Instagram: <a href="https://instagram.com/frontino.software">@frontino.software</a>
+</p>
